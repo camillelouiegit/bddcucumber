@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="Regression">
+	<suite-files>
+		<suite-file path="Sample.xml"></suite-file>
+		<suite-file path="Sample1.xml"></suite-file>
+	</suite-files>
+</suite> 
