@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
+import com.cucumber.listener.Reporter;
 import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -35,13 +36,15 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.ITestResult;
 
 import com.aventstack.extentreports.ExtentTest;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 
 public class Browser {
 
 	public static String browser;
 	private static String url;
-	public static String dataFilePath = System.getProperty("user.dir").replace("\\", "/")
-			+ "/src/main/resources/TestData/dataFile.xml";
 	public static String downloadFilepath = System.getProperty("user.dir").replace("\\", "/")
 			+ "/src/main/resources/downloads/";
 	public static ThreadLocal<WebDriver> driver = new ThreadLocal<WebDriver>();
@@ -62,26 +65,12 @@ public class Browser {
 		browser = properties.getProperty("browser").toString();
 	}
 
-	public static void acceptAlert() {
-		getDriver().switchTo().alert().accept();
-	}
-
 	public static void closeBrowser() throws Exception {
 		if (getDriver() != null) {
 			getDriver().close();
 			getDriver().quit();
 			Log.setLog(browser.replace("grid_", "") + " instance closed.");
 		}
-	}
-
-	public static void switchToDefaultContent() {
-		getDriver().switchTo().defaultContent();
-		Log.testStep("PASSED", "Switch to default content", "Switch to default content");
-
-	}
-
-	public static void closeTab() {
-		getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.CONTROL + "w");
 	}
 
 	public static void delay(int seconds) {
@@ -196,16 +185,6 @@ public class Browser {
 		return new ArrayList<String>(getDriver().getWindowHandles()).size();
 	}
 
-	public static void navigateBackward() throws IOException {
-		getDriver().navigate().back();
-		Log.testStep("PASSED", "Navigate Backward", "Navigate Backward");
-	}
-
-	protected static void navigateForward() throws IOException {
-		getDriver().navigate().forward();
-		Log.testStep("PASSED", "Navigate Forward", "Navigate Forward");
-	}
-
 	@SuppressWarnings("deprecation")
 	public static void openBrowser() throws Exception {
 		getBrowser(browser);
@@ -254,54 +233,7 @@ public class Browser {
 			driver.set(new FirefoxDriver(firefoxCapabilities));
 			getDriver().manage().window().maximize();
 
-		} else if (browser.equalsIgnoreCase("edge")) {
-			// Set Path for the executable file
-			System.setProperty("webdriver.edge.driver", "src/main/resources/Drivers/msedgedriver.exe");
-
-			HashMap<String, Object> edgePrefs = new HashMap<String, Object>();
-			edgePrefs.put("profile.default_content_settings.popups", 0);
-			edgePrefs.put("download.default_directory", downloadFilepath);
-
-			EdgeOptions edgeOptions = new EdgeOptions();
-
-			fileInputStream = new FileInputStream(System.getProperty("user.dir").replace("\\", "/")
-					+ "/src/main/resources/AppConfig/config.properties");
-			properties = new Properties();
-			properties.load(fileInputStream);
-			String edgeProfile = properties.getProperty("edge_profile").toString();
-
-			if (edgeProfile.equals("true")) {
-				edgeOptions.setCapability("excludeSwitches", Collections.singletonList("enable-automation"));
-				edgeOptions.setCapability("useAutomationExtension", false);
-				edgeOptions.setCapability("--use-fake-device-for-media-stream", true);
-				edgeOptions.setCapability("--use-fake-ui-for-media-stream", true);
-				edgeOptions.setCapability("dom.webnotifications.enabled", 1);
-				edgeOptions.setCapability("permissions.default.microphone", 1);
-				edgeOptions.setCapability("permissions.default.camera", 1);
-				Log.testStep("INFO", "Edge Profile detected", "Edge Profile detected");
-			} else {
-				Log.testStep("INFO", "Edge Profile not detected", "Edge Profile not detected");
-			}
-
-			DesiredCapabilities edgeCapabilities = DesiredCapabilities.edge();
-			edgeCapabilities.setJavascriptEnabled(true);
-			edgeCapabilities.setAcceptInsecureCerts(true);
-			edgeCapabilities.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);
-
-			Log.testStep("INFO", "Browser used is : " + edgeCapabilities.getBrowserName().toString(),
-					edgeCapabilities.getBrowserName().toString());
-			browserName = edgeCapabilities.getBrowserName().toString();
-
-//			Runtime.getRuntime().exec("regedit");
-
-			driver.set(new EdgeDriver(edgeOptions));
-			getDriver().manage().window().maximize();
-
-		} else if (browser.equalsIgnoreCase("htmlUnit")) {
-			HtmlUnitDriver driver = new HtmlUnitDriver();
-			driver.setJavascriptEnabled(true);
-
-		} else if (browser.equalsIgnoreCase("chrome")) {
+		}else if (browser.equalsIgnoreCase("chrome")) {
 			String driverType = null;
 			if (OSChecker.isWindows()) {
 				driverType = "chromedriver.exe";
@@ -323,172 +255,38 @@ public class Browser {
 			String chromeProfile = properties.getProperty("chrome_profile").toString();
 			if (chromeProfile.equals("true")) {
 				Log.testStep("INFO", "Initializing Chrome Profile", "Initializing Chrome Profile");
-				chromeOptions.addArguments("disable-infobars", "start-maximized", "--disable-web-security",
+				chromeOptions.addArguments("disable-infobars", "--disable-web-security",
 						"--no-proxy-server", "--incognito", "--disable-gpu");
-
+				chromeOptions.addArguments("start-maximized");
+				chromeOptions.addArguments("mute-audio");
+				chromeOptions.addArguments("disable-extensions");
+//				chromeOptions.addArguments("headless");
+				chromeOptions.addArguments("disable-gpu");
+				chromeOptions.addArguments("window-size=1920x1080");
+				chromeOptions.setExperimentalOption("prefs", chromePrefs);
 				chromeOptions.setExperimentalOption("excludeSwitches", Collections.singletonList("enable-automation"));
 				chromeOptions.setExperimentalOption("useAutomationExtension", false);
+				DesiredCapabilities chromeCapabilities = DesiredCapabilities.chrome();
+				chromeCapabilities.setJavascriptEnabled(true);
+				chromeCapabilities.setAcceptInsecureCerts(true);
+				chromeCapabilities.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);
+				chromeCapabilities.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
 
+				Log.testStep("INFO", "Browser used is : " + chromeCapabilities.getBrowserName().toString(),
+						chromeCapabilities.getBrowserName().toString());
+				browserName = chromeCapabilities.getBrowserName().toString();
+
+				driver.set(new ChromeDriver(chromeCapabilities));
+
+				Log.testStep("PASSED", "Browser Initialized", "Browser Initialized");
 			} else {
 				Log.testStep("INFO", "Chrome Profile not detected", "Chrome Profile not detected");
 			}
 
-			chromeOptions.addArguments("start-maximized");
-			chromeOptions.addArguments("mute-audio");
-			chromeOptions.addArguments("disable-extensions");
-//			chromeOptions.addArguments("headless");
-			chromeOptions.addArguments("disable-gpu");
-			chromeOptions.addArguments("window-size=1920x1080");
-
-			// TODO
-			/**
-			 * To fix issues on the ff:
-			 * chromeOptions.addArguments("use-fake-device-for-media-stream");
-			 * chromeOptions.addArguments("use-fake-ui-for-media-stream");
-			 */
-			chromeOptions.addArguments("use-fake-device-for-media-stream");
-			chromeOptions.addArguments("use-fake-ui-for-media-stream");
-
-			chromePrefs.put("profile.default_content_setting_values.media_stream_mic", 1);
-			chromePrefs.put("profile.default_content_setting_values.media_stream_camera", 1);
-			chromePrefs.put("profile.default_content_setting_values.geolocation", 1);
-			chromePrefs.put("profile.default_content_setting_values.notifications", 1);
-			chromeOptions.setExperimentalOption("prefs", chromePrefs);
-
-			DesiredCapabilities chromeCapabilities = DesiredCapabilities.chrome();
-			chromeCapabilities.setJavascriptEnabled(true);
-			chromeCapabilities.setAcceptInsecureCerts(true);
-			chromeCapabilities.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);
-			chromeCapabilities.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
-
-			Log.testStep("INFO", "Browser used is : " + chromeCapabilities.getBrowserName().toString(),
-					chromeCapabilities.getBrowserName().toString());
-			browserName = chromeCapabilities.getBrowserName().toString();
-
-			driver.set(new ChromeDriver(chromeCapabilities));
-
-			Log.testStep("PASSED", "Browser Initialized", "Browser Initialized");
-
-		} else if (browser.equalsIgnoreCase("grid_chrome")) {
-			ChromeOptions gridChromeOptions = new ChromeOptions();
-			gridChromeOptions.addArguments("start-maximized");
-			gridChromeOptions.addArguments("mute-audio");
-			gridChromeOptions.addArguments("disable-extensions");
-			gridChromeOptions.addArguments("headless");
-			gridChromeOptions.addArguments("disable-gpu");
-			gridChromeOptions.addArguments("window-size=1920x1080");
-
-			DesiredCapabilities gridChromeCapabilities = DesiredCapabilities.chrome();
-			gridChromeCapabilities.setJavascriptEnabled(true);
-			gridChromeCapabilities.setAcceptInsecureCerts(true);
-			gridChromeCapabilities.setCapability(ChromeOptions.CAPABILITY, gridChromeOptions);
-
-			driver.set(new RemoteWebDriver(new URL(seleniumGridUrl), gridChromeCapabilities));
-
-		} else if (browser.equalsIgnoreCase("grid_ie")) {
-			DesiredCapabilities capability = DesiredCapabilities.internetExplorer();
-			capability.setCapability("nativeEvents", false);
-			capability.setCapability("unexpectedAlertBehaviour", "accept");
-			capability.setCapability("ignoreProtectedModeSettings", true);
-			capability.setCapability("disable-popup-blocking", true);
-			capability.setCapability("enablePersistentHover", true);
-			driver.set(new RemoteWebDriver(new URL(seleniumGridUrl), capability));
-			getDriver().manage().window().maximize();
-
-		} else if (browser.equalsIgnoreCase("grid_firefox")) {
-			DesiredCapabilities capability = DesiredCapabilities.firefox();
-			driver.set(new RemoteWebDriver(new URL(seleniumGridUrl), capability));
-			getDriver().manage().window().maximize();
-
-		} else {
-			throw new IllegalArgumentException("Could not find supported browser: " + browser);
 		}
 		// getDriver().manage().deleteAllCookies();
 		Log.setLog("Start automation test in " + browser.replace("grid_", "") + " with Dimensions: "
 				+ getDriver().manage().window().getSize());
-	}
-
-	protected static void openBrowserAndNavigateUrl(String url) throws Exception {
-		openBrowser();
-		getDriver().get(url);
-		Log.testStep("PASSED", "Navigate to " + url, "Navigate to " + url);
-	}
-
-	public static void opennewtab() {
-		getDriver().findElement(By.cssSelector("body")).sendKeys(Keys.CONTROL + "t");
-	}
-
-	public static void refreshPage() throws IOException {
-		getDriver().navigate().refresh();
-		Log.testStep("PASSED", "Page is Refreshed", "Page is Refreshed");
-	}
-
-	public static void scrollDown() {
-		JavascriptExecutor js = (JavascriptExecutor) getDriver();
-		js.executeScript("window.scrollBy(0,document.body.scrollHeight)");
-		Log.testStep("PASSED", "Page is scrolled down", "Page is scrolled down");
-	}
-
-	public static void stopPageLoading() throws IOException {
-		JavascriptExecutor js = (JavascriptExecutor) getDriver();
-		js.executeScript("return window.stop");
-		Log.testStep("PASSED", "Page loading is stopped", "Page loading is stopped");
-	}
-
-	public static void switchParentTab() throws InterruptedException {
-		getDriver().close();
-		ArrayList<String> tabs = new ArrayList<String>(getDriver().getWindowHandles());
-		getDriver().switchTo().window(tabs.get(0));
-	}
-
-	public static void switchWindowTab(int tab) throws InterruptedException {
-		try {
-			int loop = 0;
-			int tabCount = 0;
-			while (tabCount != (tab + 1) && loop != 5) {
-				tabCount = getTabCount();
-				delay(1);
-				loop += 1;
-			}
-			ArrayList<String> tabs = new ArrayList<String>(getDriver().getWindowHandles());
-			getDriver().switchTo().window(tabs.get(tab));
-		} catch (Exception e) {
-			Log.testStep("FAILED", "Tab/Window is NOT available", "Tab/Window is available");
-			throw e;
-		}
-	}
-
-	public static void waitForAngularRequestsToFinish() {
-		if ((boolean) ((JavascriptExecutor) getDriver())
-				.executeScript("return (typeof angular !== 'undefined')? true : false;")) {
-			((JavascriptExecutor) getDriver()).executeAsyncScript("var callback = arguments[arguments.length - 1];"
-					+ "angular.element(document.body).injector().get('$browser').notifyWhenNoOutstandingRequests(callback);");
-		}
-	}
-
-	public static boolean waitForJStoLoad() {
-		WebDriverWait wait = new WebDriverWait(getDriver(), 30);
-		// wait for jQuery to load
-		ExpectedCondition<Boolean> jQueryLoad = new ExpectedCondition<Boolean>() {
-			@Override
-			public Boolean apply(WebDriver arg0) {
-				try {
-					Long state = (Long) ((JavascriptExecutor) arg0).executeScript("return jQuery.active");
-					return (state == 0);
-				} catch (Exception e) {
-					return true;
-				}
-			}
-		};
-		// wait for Javascript to load
-		ExpectedCondition<Boolean> jsLoad = new ExpectedCondition<Boolean>() {
-			@Override
-			public Boolean apply(WebDriver arg0) {
-				String state = (String) ((JavascriptExecutor) arg0).executeScript("return document.readyState;");
-				return state.equalsIgnoreCase("complete");
-			}
-		};
-		return wait.until(jQueryLoad) && wait.until(jsLoad);
 	}
 
 	public static String getBrowserProperty() throws Exception {
@@ -502,7 +300,6 @@ public class Browser {
 	}
 
 	public static void setEnvironment() throws Exception {
-
 		fileInputStream = new FileInputStream(
 				System.getProperty("user.dir").replace("\\", "/") + "/src/main/resources/AppConfig/config.properties");
 		properties = new Properties();
@@ -510,13 +307,9 @@ public class Browser {
 		environment = properties.getProperty("environment").toString();
 
 		if (environment.equals("dev")) {
-			// TODO set excel sheet name based on environment
-			DataAccessLayer.setSheetName(environment);
 			Log.testStep("INFO", "Setting the environment to " + environment,
 					"Setting the environment to " + environment);
 		} else if (environment.equals("test")) {
-			// TODO set excel sheet name based on environment
-			DataAccessLayer.setSheetName(environment);
 			Log.testStep("INFO", "Setting the environment to " + environment,
 					"Setting the environment to " + environment);
 		}
@@ -550,8 +343,9 @@ public class Browser {
 	public static void InitializeTest() throws Exception {
 		CleanTestOutput();
 		getBrowserProperty();
-		openBrowser();
 		setEnvironment();
+		openBrowser();
 		openApplication();
 	}
+
 }

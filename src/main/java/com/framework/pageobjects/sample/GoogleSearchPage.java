@@ -12,7 +12,7 @@ public class GoogleSearchPage {
 
 		public final static TextBox searchBar = new TextBox("Google Search bar", By.xpath("//input[@name='q']"));
 		public final static Element googleSearchButton = new Element("Google Search bar",
-				By.xpath("//div[@class='lJ9FBc']//input[@name='btnK']"));
+				By.xpath("//div[2]//input[@name='btnK']"));
 
 		public static void verifySearchBar() {
 			searchBar.verifyDisplayed();

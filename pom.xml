@@ -20,17 +20,17 @@
 				<configuration>
 					<source>1.8</source>
 					<target>1.8</target>
-					<executions>
-						<execution>
-							<phase>integration-test</phase>
-							<goals>
-								<goal>test</goal>
-							</goals>
-							<configuration>
-								<skip>false</skip>
-							</configuration>
-						</execution>
-					</executions>
+<!--					<executions>-->
+<!--						<execution>-->
+<!--							<phase>integration-test</phase>-->
+<!--							<goals>-->
+<!--								<goal>test</goal>-->
+<!--							</goals>-->
+<!--							<configuration>-->
+<!--								<skip>false</skip>-->
+<!--							</configuration>-->
+<!--						</execution>-->
+<!--					</executions>-->
 				</configuration>
 			</plugin>
 			<plugin>
@@ -41,8 +41,8 @@
 					<reportsDirectory>test-output</reportsDirectory>
 					<testFailureIgnore>true</testFailureIgnore>
 					<suiteXmlFiles>
-						<suiteXmlFile>TestSuite/sampleProject/sampleTestSuite.xml</suiteXmlFile>
-						<!-- <suiteXmlFile>TestSuite/sampleProject/${suiteXmlFile}</suiteXmlFile> -->
+<!--						<suiteXmlFile>TestSuite/sampleProject/sampleTestSuite.xml</suiteXmlFile>-->
+						 <suiteXmlFile>TestSuite/sampleProject/${suiteXmlFile}</suiteXmlFile>
 					</suiteXmlFiles>
 				</configuration>
 			</plugin>
